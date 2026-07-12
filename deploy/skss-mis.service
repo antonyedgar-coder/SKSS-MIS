@@ -1,0 +1,15 @@
+[Unit]
+Description=SKSS-MIS Flask App
+After=network.target
+
+[Service]
+User=skss
+Group=skss
+WorkingDirectory=/var/www/skss-mis
+EnvironmentFile=/var/www/skss-mis/.env
+ExecStart=/var/www/skss-mis/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 "run:app"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
