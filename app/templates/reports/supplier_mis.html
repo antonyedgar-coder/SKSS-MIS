@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block title %}Supplier MIS Report - SKSS-MIS{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/light.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 page-header">
+  <div>
+    <h2><i class="bi bi-truck me-2"></i>Supplier MIS Report</h2>
+    <p class="text-muted mb-0 small">Select date range and filters, then click View to generate the report.</p>
+  </div>
+  {% if show_report %}
+  <a href="{{ url_for('reports.supplier_mis_excel', from_date=from_date, to_date=to_date, supplier_id=supplier_id or '', brand_id=brand_id or '', category_id=category_id or '') }}" class="btn btn-success">
+    <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+  </a>
+  {% endif %}
+</div>
+
+<form method="post" class="card mb-4" id="supplierMisFilterForm">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="date_range">Date Range</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+          <input type="text" id="date_range" class="form-control" placeholder="Select from date to to date" autocomplete="off">
+        </div>
+        <input type="hidden" name="from_date" id="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" id="to_date" value="{{ to_date }}">
+        <div class="invalid-feedback">Please select both from and to dates.</div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Supplier</label>
+        <input type="text" id="supplier_input" class="form-control" placeholder="Type to search..." autocomplete="off">
+        <input type="hidden" name="supplier_id" id="supplier_id" value="{{ supplier_id or '' }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Brand</label>
+        <input type="text" id="brand_input" class="form-control" placeholder="Type to search..." autocomplete="off">
+        <input type="hidden" name="brand_id" id="brand_id" value="{{ brand_id or '' }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Category</label>
+        <input type="text" id="category_input" class="form-control" placeholder="Type to search..." autocomplete="off">
+        <input type="hidden" name="category_id" id="category_id" value="{{ category_id or '' }}">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel me-1"></i>View Report
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if show_report %}
+
+{% if view_mode == 'supplier_ledger' %}
+<h5>Supplier Ledger{% if selected_supplier %} — {{ selected_supplier.name }}{% endif %}</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Particulars</th>
+        <th>Reference No.</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in ledger_rows %}
+      <tr>
+        <td>{{ entry.date.strftime('%d-%b-%Y') }}</td>
+        <td>{{ entry.particulars }}</td>
+        <td>{{ entry.reference or '-' }}</td>
+        <td class="text-end">{% if entry.debit %}{{ "%.2f"|format(entry.debit) }}{% else %}-{% endif %}</td>
+        <td class="text-end">{% if entry.credit %}{{ "%.2f"|format(entry.credit) }}{% else %}-{% endif %}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(entry.balance) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted text-center">No transactions for the selected supplier and period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-muted">Debit includes Payment and Purchase Return. Credit includes Purchase. Balance is the running outstanding amount.</p>
+
+{% elif view_mode == 'brand_detail' %}
+<h5>Brand Summary</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Supplier</th>
+        <th>Category</th>
+        <th>Brand</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.supplier.name }}</td>
+        <td>{{ row.category_name }}</td>
+        <td>{{ row.brand.name }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.debit) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.credit) }}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(row.net) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted text-center">No data for the selected brand and period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif view_mode == 'category_detail' %}
+<h5>Category Summary</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Supplier</th>
+        <th>Category</th>
+        <th>Brand</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.supplier.name }}</td>
+        <td>{{ row.category_name }}</td>
+        <td>{{ row.brand.name }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.debit) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.credit) }}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(row.net) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted text-center">No data for the selected category and period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif view_mode == 'brand_summary' %}
+<h5>Brand Summary</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Brand</th>
+        <th>Supplier</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in brand_supplier_rows %}
+      <tr>
+        <td>{{ row.brand_name }}</td>
+        <td>{{ row.supplier_name }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.debit) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.credit) }}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(row.net) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted text-center">No brand data for the selected period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif view_mode == 'category_summary' %}
+<h5>Category Summary</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in category_supplier_rows %}
+      <tr>
+        <td>{{ row.category_name }}</td>
+        <td>{{ row.supplier_name }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.debit) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.credit) }}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(row.net) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted text-center">No category data for the selected period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<h5>Supplier Summary</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Supplier</th>
+        <th>Company</th>
+        <th>Brand</th>
+        <th>Category</th>
+        <th class="text-end">Debit</th>
+        <th class="text-end">Credit</th>
+        <th class="text-end">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.supplier.name }}</td>
+        <td>{{ row.brand.company.name if row.brand.company else '-' }}</td>
+        <td>{{ row.brand.name }}</td>
+        <td>{{ row.category_name }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.debit) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.credit) }}</td>
+        <td class="text-end fw-bold">{{ "%.2f"|format(row.net) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-muted text-center">No data for the selected filters and period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-light border text-center py-5">
+  <i class="bi bi-funnel display-6 text-muted d-block mb-2"></i>
+  <p class="mb-0 text-muted">No report displayed yet. Choose your filters and click <strong>View Report</strong>.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='js/date-range-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='js/combobox.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var form = document.getElementById("supplierMisFilterForm");
+  var dateRangeInput = document.getElementById("date_range");
+  var fromInput = document.getElementById("from_date");
+  var toInput = document.getElementById("to_date");
+
+  initDateRangePicker(dateRangeInput, fromInput, toInput);
+  bindDateRangeFormValidation(form, dateRangeInput, fromInput, toInput);
+
+  var supplierOptions = [
+    {% for s in suppliers %}
+    { id: {{ s.id }}, label: {{ s.name|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  var brandOptions = [
+    {% for b in brands %}
+    { id: {{ b.id }}, label: {{ (b.company.name ~ ' - ' ~ b.name)|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  var categoryOptions = [
+    {% for c in categories %}
+    { id: {{ c.id }}, label: {{ c.name|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  initCombobox(
+    document.getElementById("supplier_input"),
+    document.getElementById("supplier_id"),
+    supplierOptions,
+    { allowEmpty: true, emptyLabel: "All Suppliers" }
+  );
+  initCombobox(
+    document.getElementById("brand_input"),
+    document.getElementById("brand_id"),
+    brandOptions,
+    { allowEmpty: true, emptyLabel: "All Brands" }
+  );
+  initCombobox(
+    document.getElementById("category_input"),
+    document.getElementById("category_id"),
+    categoryOptions,
+    { allowEmpty: true, emptyLabel: "All Categories" }
+  );
+});
+</script>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Suppliers - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-building me-2"></i>Suppliers</h2>
+    <p class="text-muted mb-0">Add individually or bulk upload from Excel/CSV.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('masters.suppliers_bulk_template') }}" class="btn btn-outline-success">
+      <i class="bi bi-file-earmark-excel me-1"></i>Excel Template
+    </a>
+    <a href="{{ url_for('masters.suppliers_bulk_template_csv') }}" class="btn btn-outline-success">
+      <i class="bi bi-filetype-csv me-1"></i>CSV Template
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-5">
+    <form method="post" class="card card-body mb-3">
+      <h5 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Add Supplier</h5>
+      <div class="mb-3">
+        <label class="form-label">Supplier Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Opening Balance</label>
+        <input type="number" step="0.01" name="opening_balance" class="form-control" value="0">
+        <small class="text-muted">Amount owed to supplier at go-live.</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Contact</label>
+        <input type="text" name="contact" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Address</label>
+        <textarea name="address" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select name="category_id" class="form-select">
+          <option value="">-- None --</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Supplier</button>
+    </form>
+
+    <form method="post" action="{{ url_for('masters.suppliers_bulk_upload') }}" enctype="multipart/form-data" class="card card-body">
+      <h5 class="mb-3"><i class="bi bi-upload me-1"></i>Bulk Upload</h5>
+      <p class="small text-muted">Columns: Name, Opening Balance, Contact, Email, Address, Category</p>
+      <div class="mb-3">
+        <input type="file" name="upload_file" class="form-control" accept=".xlsx,.csv" required>
+      </div>
+      <button class="btn btn-success w-100"><i class="bi bi-file-earmark-arrow-up me-1"></i>Upload File</button>
+    </form>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="table-responsive">
+      <table class="table table-striped table-sm">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="text-end">Opening Bal.</th>
+            <th>Category</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in suppliers %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td class="text-end">{{ "%.2f"|format(s.opening_balance or 0) }}</td>
+            <td>{{ s.category.name if s.category else '-' }}</td>
+            <td>{{ s.contact or '-' }}</td>
+            <td>{{ s.email or '-' }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{{ url_for('masters.edit_supplier', supplier_id=s.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{{ url_for('masters.delete_supplier', supplier_id=s.id) }}" class="d-inline" onsubmit="return confirm('Delete supplier?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No suppliers yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

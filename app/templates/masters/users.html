@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Users - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-people me-2"></i>Users</h2>
+  <p class="text-muted">Manage user accounts, roles, and access.</p>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <form method="post" class="card card-body mb-3">
+      <h5 class="mb-3">Add User</h5>
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Role</label>
+        <select name="role" class="form-select">
+          <option value="staff">Staff</option>
+          <option value="approver">Approver</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add User</button>
+    </form>
+  </div>
+  <div class="col-md-8">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td><span class="badge bg-{{ 'primary' if u.role == 'admin' else 'info' if u.role == 'approver' else 'secondary' }}">{{ u.role }}</span></td>
+            <td>{% if u.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</td>
+            <td class="text-end">
+              <a href="{{ url_for('masters.edit_user', user_id=u.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              {% if u.id != current_user.id %}
+              <form method="post" action="{{ url_for('masters.delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Delete user?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

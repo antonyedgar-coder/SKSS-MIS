@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Bank and Cash Master - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-credit-card me-2"></i>Bank and Cash Master</h2>
+    <p class="text-muted mb-0">Manage all bank and cash accounts used for receipts and payments.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('masters.bank_accounts_bulk_template') }}" class="btn btn-outline-success">
+      <i class="bi bi-file-earmark-excel me-1"></i>Excel Template
+    </a>
+    <a href="{{ url_for('masters.bank_accounts_bulk_template_csv') }}" class="btn btn-outline-success">
+      <i class="bi bi-filetype-csv me-1"></i>CSV Template
+    </a>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-5">
+    <form method="post" class="card card-body mb-3">
+      <h5 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Add Account</h5>
+      <div class="mb-3">
+        <label class="form-label">Account Name</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g. HDFC Current or Cash" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Account Type</label>
+        <select name="account_type" class="form-select" required>
+          <option value="bank">Bank</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Opening Balance</label>
+        <input type="number" step="0.01" name="opening_balance" class="form-control" value="0">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">As On Date</label>
+        <input type="date" name="as_on_date" class="form-control">
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Account</button>
+    </form>
+
+    <form method="post" action="{{ url_for('masters.bank_accounts_bulk_upload') }}" enctype="multipart/form-data" class="card card-body">
+      <h5 class="mb-3"><i class="bi bi-upload me-1"></i>Bulk Upload</h5>
+      <p class="small text-muted">Columns: Account Name, Account Type (Bank/Cash), Opening Balance, As On Date</p>
+      <div class="mb-3">
+        <input type="file" name="upload_file" class="form-control" accept=".xlsx,.csv" required>
+      </div>
+      <button class="btn btn-success w-100"><i class="bi bi-file-earmark-arrow-up me-1"></i>Upload File</button>
+    </form>
+  </div>
+  <div class="col-lg-7">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th class="text-end">Opening Balance</th>
+            <th>As On Date</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for acc in accounts %}
+          <tr>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.account_type|capitalize }}</td>
+            <td class="text-end">
+              {% if openings.get(acc.id) %}{{ "%.2f"|format(openings[acc.id].amount) }}{% else %}-{% endif %}
+            </td>
+            <td>
+              {% if openings.get(acc.id) %}{{ openings[acc.id].as_on_date.strftime('%d-%b-%Y') }}{% else %}-{% endif %}
+            </td>
+            <td>{% if acc.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('masters.toggle_bank_account', account_id=acc.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-secondary">{% if acc.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No accounts yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

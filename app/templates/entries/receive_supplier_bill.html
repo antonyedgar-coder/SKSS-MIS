@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Receive Purchase - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-box-seam me-2"></i>Receive Purchase</h2>
+  <p class="text-muted">Book purchase against order <strong>{{ order.order_number }}</strong></p>
+</div>
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card card-body mb-3 bg-light">
+      <h6>Order Details</h6>
+      <p class="mb-1"><strong>Order No.:</strong> {{ order.order_number }}</p>
+      <p class="mb-1"><strong>Order Date:</strong> {{ order.order_date.strftime('%d-%b-%Y') }}</p>
+      <p class="mb-1"><strong>Supplier:</strong> {{ order.supplier.name }}</p>
+      <p class="mb-1"><strong>Brand:</strong> {{ order.brand.company.name }} - {{ order.brand.name }}</p>
+      <p class="mb-1"><strong>Ordered Amount:</strong> ₹ {{ "%.2f"|format(order.ordered_amount) }}</p>
+      {% if order.remarks %}<p class="mb-0"><strong>Remarks:</strong> {{ order.remarks }}</p>{% endif %}
+    </div>
+
+    <form method="post" class="card card-body">
+      <div class="mb-3">
+        <label class="form-label">Purchase / Bill Date</label>
+        <input type="date" name="bill_date" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Supplier</label>
+        <input type="text" class="form-control" value="{{ order.supplier.name }}" readonly>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Brand</label>
+        <input type="text" class="form-control" value="{{ order.brand.company.name }} - {{ order.brand.name }}" readonly>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Purchase Amount</label>
+        <input type="number" step="0.01" name="total_amount" id="total_amount" class="form-control"
+               value="{{ order.ordered_amount }}" required>
+        <small class="text-muted">Edit only if delivered amount differs from ordered amount.</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Note</label>
+        <input type="text" name="note" class="form-control" value="{{ order.remarks or '' }}">
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Book Purchase</button>
+      <a href="{{ url_for('entries.supplier_bills') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("total_amount").addEventListener("input", function () {
+    const ordered = {{ order.ordered_amount }};
+    const purchased = parseFloat(this.value) || 0;
+    if (Math.abs(purchased - ordered) >= 0.01) {
+      this.classList.add("border-warning");
+    } else {
+      this.classList.remove("border-warning");
+    }
+  });
+</script>
+{% endblock %}

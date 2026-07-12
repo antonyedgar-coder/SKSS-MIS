@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Settings - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header settings-header">
+  <h2><i class="bi bi-gear me-2"></i>Settings</h2>
+  <p class="text-muted">Admin only — manage users, brands, and master data.</p>
+</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.users') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-purple"><i class="bi bi-people"></i></div>
+        <div><h5 class="mb-0">Users</h5><p class="text-muted mb-0">Roles & per-module permissions</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.brands') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-orange"><i class="bi bi-tag"></i></div>
+        <div><h5 class="mb-0">Brands</h5><p class="text-muted mb-0">Product brands</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.supplier_categories') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-teal"><i class="bi bi-grid"></i></div>
+        <div><h5 class="mb-0">Supplier Categories</h5><p class="text-muted mb-0">Dairy, Grocery, etc.</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.suppliers') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-indigo"><i class="bi bi-building"></i></div>
+        <div><h5 class="mb-0">Suppliers</h5><p class="text-muted mb-0">Vendor master list</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.expense_groups') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-pink"><i class="bi bi-collection"></i></div>
+        <div><h5 class="mb-0">Expense Groups</h5><p class="text-muted mb-0">Group expense categories</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.expense_categories') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-cyan"><i class="bi bi-list-check"></i></div>
+        <div><h5 class="mb-0">Expense Categories</h5><p class="text-muted mb-0">Rent, salary, utilities</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.bank_accounts') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-green"><i class="bi bi-credit-card"></i></div>
+        <div><h5 class="mb-0">Bank and Cash Master</h5><p class="text-muted mb-0">Bank and cash accounts</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.opening_balances') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-amber"><i class="bi bi-piggy-bank"></i></div>
+        <div><h5 class="mb-0">Opening Balances</h5><p class="text-muted mb-0">Cash and bank opening</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.delete_test_data') }}" class="card menu-card settings-card settings-card-danger text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-red"><i class="bi bi-trash3"></i></div>
+        <div><h5 class="mb-0 text-danger">Delete Test Data</h5><p class="text-muted mb-0">Clear transactions for fresh start</p></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('masters.activity_log') }}" class="card menu-card settings-card text-decoration-none">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="settings-icon-tile tile-slate"><i class="bi bi-journal-text"></i></div>
+        <div><h5 class="mb-0">Activity Log</h5><p class="text-muted mb-0">Who did what and when</p></div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Delete Test Data - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-trash3 me-2 text-danger"></i>Delete Test Data</h2>
+  <p class="text-muted">Remove transactional entries used during testing. Master data will not be deleted.</p>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card border-danger mb-4">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle me-1"></i>This action cannot be undone
+      </div>
+      <div class="card-body">
+        <p class="mb-3">The following data will be permanently deleted:</p>
+        <ul class="mb-3">
+          <li>Purchase Orders ({{ counts.purchase_orders }})</li>
+          <li>Supplier Purchases ({{ counts.supplier_bills }})</li>
+          <li>Purchase Returns ({{ counts.purchase_returns }})</li>
+          <li>Supplier Payments ({{ counts.supplier_payments }})</li>
+          <li>Expense Payments ({{ counts.expense_payments }})</li>
+          <li>Receipt MIS entries ({{ counts.receipts }})</li>
+          <li>Opening Balances ({{ counts.opening_balances }})</li>
+          <li>Supplier opening balances reset to zero</li>
+        </ul>
+        <p class="text-muted small mb-0">
+          <strong>Kept:</strong> Users, suppliers, brands, categories, expense groups, bank/cash accounts, and other master settings.
+        </p>
+      </div>
+    </div>
+
+    {% if total_records > 0 %}
+    <form method="post" class="card card-body" onsubmit="return confirm('Delete all test data permanently?');">
+      <div class="mb-3">
+        <label class="form-label">Type <strong>DELETE</strong> to confirm</label>
+        <input type="text" name="confirm_text" class="form-control" placeholder="DELETE" autocomplete="off" required>
+      </div>
+      <button type="submit" class="btn btn-danger">
+        <i class="bi bi-trash3 me-1"></i>Delete All Test Data
+      </button>
+      <a href="{{ url_for('masters.index') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+    {% else %}
+    <div class="alert alert-info mb-0">No test data found. There is nothing to delete.</div>
+    <a href="{{ url_for('masters.index') }}" class="btn btn-secondary mt-3">Back to Settings</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

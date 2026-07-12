@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Opening Balances - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-piggy-bank me-2"></i>Opening Balances</h2>
+  <p class="text-muted mb-0">Set opening balances for each bank and cash account from the master.</p>
+</div>
+{% if latest %}
+<p class="text-muted">Last saved on {{ latest.as_on_date.strftime('%d-%b-%Y') }}.</p>
+{% endif %}
+<form method="post" class="card card-body col-md-6">
+  <div class="mb-3">
+    <label class="form-label">As On Date</label>
+    <input type="date" name="as_on_date" class="form-control" required>
+  </div>
+  {% for account in accounts %}
+  <div class="mb-3">
+    <label class="form-label">{{ account.name }} ({{ account.account_type|capitalize }})</label>
+    <input type="number" step="0.01" name="account_{{ account.id }}" class="form-control" value="0">
+  </div>
+  {% else %}
+  <p class="text-muted">Add accounts in Bank and Cash Master first.</p>
+  {% endfor %}
+  <button class="btn btn-primary">Save Opening Balances</button>
+</form>
+{% endblock %}

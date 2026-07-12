@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Expense Groups - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-collection me-2"></i>Expense Groups</h2>
+  <p class="text-muted mb-0">Group expense categories for reporting. Only Admin can manage groups.</p>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <form method="post" class="card card-body mb-3">
+      <div class="mb-3">
+        <label class="form-label">Group Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <button class="btn btn-primary">Add Group</button>
+    </form>
+  </div>
+  <div class="col-md-8">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Group Name</th><th>Categories</th><th></th></tr></thead>
+        <tbody>
+          {% for group in groups %}
+          <tr>
+            <td>{{ group.name }}</td>
+            <td>{{ group.categories|length }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('masters.delete_expense_group', group_id=group.id) }}" class="d-inline" onsubmit="return confirm('Delete this group?')">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted">No expense groups yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Cash Report - SKSS-MIS{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/light.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 page-header">
+  <div>
+    <h2><i class="bi bi-cash-stack me-2"></i>Cash Report</h2>
+    <p class="text-muted mb-0 small">Summary by cash and bank accounts — opening, receipts, payments, and closing balance.</p>
+  </div>
+  {% if show_report and report_data and report_data.columns %}
+  <a href="{{ url_for('reports.cash_report_excel', from_date=from_date, to_date=to_date, account_ids=selected_account_ids) }}" class="btn btn-success">
+    <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+  </a>
+  {% endif %}
+</div>
+
+<form method="post" class="card mb-4" id="cashReportFilterForm">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="date_range">Date Range</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+          <input type="text" id="date_range" class="form-control" placeholder="Select from date to to date" autocomplete="off">
+        </div>
+        <input type="hidden" name="from_date" id="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" id="to_date" value="{{ to_date }}">
+        <div class="invalid-feedback">Please select both from and to dates.</div>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Bank / Cash Accounts</label>
+        <div class="border rounded p-2 account-filter-list" style="max-height: 140px; overflow-y: auto;">
+          {% for a in accounts %}
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input account-filter-check" name="account_ids" value="{{ a.id }}" id="acct_{{ a.id }}"
+              {% if selected_account_ids and a.id in selected_account_ids %}checked{% endif %}>
+            <label class="form-check-label" for="acct_{{ a.id }}">{{ a.name }}</label>
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No accounts in master.</p>
+          {% endfor %}
+        </div>
+        <div class="form-text">Select one or more accounts, or leave all unchecked to include every account.</div>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel me-1"></i>View Report
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if show_report and report_data and report_data.columns %}
+{% if selected_account_ids %}
+<p class="text-muted small mb-2">
+  Showing selected accounts:
+  {% for col in report_data.columns %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+</p>
+{% endif %}
+<div class="table-responsive">
+  <table class="table table-bordered table-sm cash-report-matrix">
+    <thead class="table-light">
+      <tr>
+        <th>Particulars</th>
+        {% for col in report_data.columns %}
+        <th class="text-end">{{ col.name }}</th>
+        {% endfor %}
+        <th class="text-end">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for section in report_data.sections %}
+      <tr class="table-secondary">
+        <th colspan="{{ report_data.columns|length + 2 }}">{{ section.title }}</th>
+      </tr>
+      {% for row in section.rows %}
+      <tr class="{% if section.highlight %}fw-semibold{% endif %}">
+        <td>{{ row.label }}</td>
+        {% for col in report_data.columns %}
+        <td class="text-end">{{ "%.2f"|format(row.amounts[col.id]) }}</td>
+        {% endfor %}
+        <td class="text-end {% if section.highlight %}fw-bold{% endif %}">{{ "%.2f"|format(row.total) }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-muted small mt-2 mb-0">
+  Closing Balance = Opening Balance + Receipts − Payments (Supplier Payments and Expense Groups).
+</p>
+{% elif show_report %}
+<div class="alert alert-warning">
+  {% if selected_account_ids %}
+  No matching bank or cash accounts for your selection.
+  {% else %}
+  No bank or cash accounts found. Add accounts under Settings → Bank and Cash Master.
+  {% endif %}
+</div>
+{% else %}
+<div class="alert alert-light border text-center py-5">
+  <i class="bi bi-funnel display-6 text-muted d-block mb-2"></i>
+  <p class="mb-0 text-muted">No report displayed yet. Choose a date range and click <strong>View Report</strong>.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='js/date-range-picker.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var form = document.getElementById("cashReportFilterForm");
+  var dateRangeInput = document.getElementById("date_range");
+  var fromInput = document.getElementById("from_date");
+  var toInput = document.getElementById("to_date");
+  initDateRangePicker(dateRangeInput, fromInput, toInput);
+  bindDateRangeFormValidation(form, dateRangeInput, fromInput, toInput);
+});
+</script>
+{% endblock %}

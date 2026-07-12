@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}PO Variation Report - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 page-header flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-exclamation-triangle me-2"></i>PO Variation Report</h2>
+    <p class="text-muted mb-0">Ordered vs purchased amount — closed by approver.</p>
+  </div>
+  <a href="{{ url_for('reports.po_variation_excel', from_date=from_date, to_date=to_date, status_filter=status_filter) }}" class="btn btn-success">
+    <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+  </a>
+</div>
+
+{% if pending_count > 0 %}
+<div class="alert alert-warning">
+  <strong>{{ pending_count }}</strong> variation(s) pending approver review.
+</div>
+{% endif %}
+
+<form method="post" class="row g-2 mb-4">
+  <div class="col-md-3">
+    <label class="form-label">From Date</label>
+    <input type="date" name="from_date" class="form-control" value="{{ from_date }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">To Date</label>
+    <input type="date" name="to_date" class="form-control" value="{{ to_date }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="status_filter" class="form-select">
+      <option value="with_variation" {% if status_filter == 'with_variation' %}selected{% endif %}>All Variations</option>
+      <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval</option>
+      <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+      <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All PO Purchases</option>
+    </select>
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button class="btn btn-primary w-100">View</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Order No.</th>
+        <th>Supplier</th>
+        <th>Brand</th>
+        <th class="text-end">Ordered</th>
+        <th class="text-end">Purchased</th>
+        <th class="text-end">Variation</th>
+        <th>Status</th>
+        <th>Approver</th>
+        {% if current_user.is_approver %}<th>Action</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in rows %}
+      <tr>
+        <td>{{ b.bill_date.strftime('%d-%b-%Y') }}</td>
+        <td>{{ b.bill_no }}</td>
+        <td>{{ b.supplier.name }}</td>
+        <td>{{ b.brand.company.name }} - {{ b.brand.name }}</td>
+        <td class="text-end">{{ "%.2f"|format(b.ordered_amount or 0) }}</td>
+        <td class="text-end">{{ "%.2f"|format(b.total_amount) }}</td>
+        <td class="text-end fw-bold {% if b.variation_amount > 0 %}text-danger{% elif b.variation_amount < 0 %}text-primary{% endif %}">
+          {{ "%.2f"|format(b.variation_amount) }}
+        </td>
+        <td>
+          {% if b.variation_status == 'pending' %}<span class="badge bg-warning text-dark">Pending</span>
+          {% elif b.variation_status == 'closed' %}<span class="badge bg-success">Closed</span>
+          {% else %}<span class="badge bg-secondary">OK</span>{% endif %}
+        </td>
+        <td>
+          {% if b.variation_closed_by %}
+            {{ b.variation_closed_by.username }}<br>
+            <small class="text-muted">{{ b.approver_remarks or '' }}</small>
+          {% else %}-{% endif %}
+        </td>
+        {% if current_user.is_approver %}
+        <td>
+          {% if b.variation_status == 'pending' %}
+          <form method="post" action="{{ url_for('reports.close_po_variation', bill_id=b.id) }}" class="d-flex gap-1">
+            <input type="hidden" name="from_date" value="{{ from_date }}">
+            <input type="hidden" name="to_date" value="{{ to_date }}">
+            <input type="hidden" name="status_filter" value="{{ status_filter }}">
+            <input type="text" name="approver_remarks" class="form-control form-control-sm" placeholder="Remarks">
+            <button class="btn btn-sm btn-success text-nowrap">Close</button>
+          </form>
+          {% else %}-{% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="text-muted text-center">No records for selected filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

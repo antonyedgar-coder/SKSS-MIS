@@ -1,0 +1,40 @@
+<div class="card card-body mb-4">
+  <h5 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Module Permissions</h5>
+  {% if user.role == 'admin' %}
+  <p class="text-muted mb-0">Admin users have full access to all modules. Permissions are not required.</p>
+  {% else %}
+  <p class="text-muted small">Set what this user can view, create, edit, and delete for each module.</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Module</th>
+          {% for action_key, action_label in permission_actions %}
+          <th class="text-center">{{ action_label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for module_key, module_label in permission_modules %}
+        {% set perm = permissions_map.get(module_key) %}
+        <tr>
+          <td>{{ module_label }}</td>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input" name="perm_{{ module_key }}_view" {% if perm and perm.can_view %}checked{% endif %}>
+          </td>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input" name="perm_{{ module_key }}_create" {% if perm and perm.can_create %}checked{% endif %}>
+          </td>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input" name="perm_{{ module_key }}_edit" {% if perm and perm.can_edit %}checked{% endif %}>
+          </td>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input" name="perm_{{ module_key }}_delete" {% if perm and perm.can_delete %}checked{% endif %}>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>

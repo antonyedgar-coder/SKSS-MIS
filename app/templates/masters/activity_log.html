@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Activity Log - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-journal-text me-2"></i>Activity Log</h2>
+    <p class="text-muted mb-0">Track what users have created, updated, deleted, and exported.</p>
+  </div>
+  <a href="{{ url_for('masters.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back to Settings
+  </a>
+</div>
+
+<form method="get" class="card card-body mb-4">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">User</label>
+      <select name="user_id" class="form-select">
+        <option value="">All users</option>
+        {% for u in users %}
+        <option value="{{ u.id }}" {% if selected_user_id == u.id %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Module</label>
+      <select name="module" class="form-select">
+        <option value="">All modules</option>
+        {% for key, label in module_labels.items() %}
+        <option value="{{ key }}" {% if selected_module == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Action</label>
+      <select name="action" class="form-select">
+        <option value="">All actions</option>
+        {% for key, label in action_labels.items() %}
+        <option value="{{ key }}" {% if selected_action == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+    </div>
+  </div>
+</form>
+
+<div class="card dashboard-panel">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 dashboard-table">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Module</th>
+          <th>Description</th>
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="text-nowrap">{{ log.created_at.strftime('%d-%b-%Y %H:%M') }}</td>
+          <td><span class="badge bg-light text-dark border">{{ log.username }}</span></td>
+          <td>
+            {% if log.action == 'create' %}<span class="badge bg-success">Create</span>
+            {% elif log.action == 'update' %}<span class="badge bg-primary">Update</span>
+            {% elif log.action == 'delete' %}<span class="badge bg-danger">Delete</span>
+            {% elif log.action == 'export' %}<span class="badge bg-info text-dark">Export</span>
+            {% elif log.action == 'approve' %}<span class="badge bg-warning text-dark">Approve</span>
+            {% elif log.action == 'login' %}<span class="badge bg-secondary">Login</span>
+            {% elif log.action == 'logout' %}<span class="badge bg-secondary">Logout</span>
+            {% elif log.action == 'bulk_upload' %}<span class="badge bg-dark">Bulk Upload</span>
+            {% elif log.action == 'clear_data' %}<span class="badge bg-danger">Clear Data</span>
+            {% else %}<span class="badge bg-secondary">{{ log.action }}</span>{% endif %}
+          </td>
+          <td>{{ module_labels.get(log.module, log.module) }}</td>
+          <td>{{ log.description }}</td>
+          <td class="text-muted">{{ log.record_ref or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No activity recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagination.pages > 1 %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="text-muted small">Page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} records)</span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('masters.activity_log', page=pagination.prev_num, user_id=selected_user_id or '', module=selected_module, action=selected_action) }}">Prev</a>
+        </li>
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('masters.activity_log', page=pagination.next_num, user_id=selected_user_id or '', module=selected_module, action=selected_action) }}">Next</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

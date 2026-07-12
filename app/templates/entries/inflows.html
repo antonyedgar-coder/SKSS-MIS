@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Receipt MIS - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-receipt-cutoff me-2"></i>Receipt MIS</h2>
+  <p class="text-muted">Record sales collections and cash deposits / petty cash.</p>
+</div>
+<div class="row">
+  {% if user_can('receipt_mis', 'create') %}
+  <div class="col-md-5">
+    <form method="post" class="card card-body mb-3">
+      <div class="mb-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="inflow_date" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Bank or Cash Head</label>
+        <select name="account_id" class="form-select" required>
+          {% for a in accounts %}
+          <option value="account-{{ a.id }}">{{ a.name }}</option>
+          {% endfor %}
+        </select>
+        {% if not accounts %}
+        <div class="form-text">Add accounts under Settings → Bank and Cash Master.</div>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Receipt Type</label>
+        <select name="receipt_type" class="form-select" required>
+          <option value="sales_collection">Sales Collection</option>
+          <option value="cash">Cash (Bank deposit / Petty cash)</option>
+        </select>
+        <div class="form-text">Use Cash only for bank deposits or petty cash issued.</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input type="number" step="0.01" name="amount" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Note</label>
+        <input type="text" name="note" class="form-control">
+      </div>
+      <button class="btn btn-primary">Save Receipt</button>
+    </form>
+  </div>
+  {% endif %}
+  <div class="col-md-{% if user_can('receipt_mis', 'create') %}7{% else %}12{% endif %}">
+    <div class="table-responsive">
+      <table class="table table-striped table-sm">
+        <thead><tr><th>Date</th><th>Head</th><th>Receipt Type</th><th class="text-end">Amount</th>{% if user_can('receipt_mis', 'delete') %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+          {% for i in inflows %}
+          <tr>
+            <td>{{ i.inflow_date.strftime('%d-%b-%Y') }}</td>
+            <td>{{ i.bank_account.name if i.bank_account else '-' }}</td>
+            <td>{% if i.receipt_type == 'cash' %}Cash Deposit / Petty Cash{% else %}Sales Collection{% endif %}</td>
+            <td class="text-end">{{ "%.2f"|format(i.amount) }}</td>
+            {% if user_can('receipt_mis', 'delete') %}
+            <td class="text-end">
+              <form method="post" action="{{ url_for('entries.delete_inflow', inflow_id=i.id) }}" class="d-inline" onsubmit="return confirm('Delete receipt?')">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-muted">No receipts recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

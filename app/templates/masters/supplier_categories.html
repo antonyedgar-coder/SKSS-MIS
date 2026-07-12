@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Supplier Categories - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-grid me-2"></i>Supplier Categories</h2>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <form method="post" class="card card-body mb-3">
+      <div class="mb-3">
+        <label class="form-label">Category Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <button class="btn btn-primary">Add Category</button>
+    </form>
+  </div>
+  <div class="col-md-8">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Name</th><th></th></tr></thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr>
+            <td>{{ cat.name }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('masters.delete_supplier_category', cat_id=cat.id) }}" class="d-inline" onsubmit="return confirm('Delete this category?')">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="text-muted">No categories yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Expense Categories - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-list-check me-2"></i>Expense Categories</h2>
+    <p class="text-muted mb-0">Only Admin can create or delete expense categories.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('masters.expense_categories_bulk_template') }}" class="btn btn-outline-success">
+      <i class="bi bi-file-earmark-excel me-1"></i>Excel Template
+    </a>
+    <a href="{{ url_for('masters.expense_categories_bulk_template_csv') }}" class="btn btn-outline-success">
+      <i class="bi bi-filetype-csv me-1"></i>CSV Template
+    </a>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-5">
+    <form method="post" class="card card-body mb-3">
+      <h5 class="mb-3"><i class="bi bi-plus-circle me-1"></i>Add Category</h5>
+      <div class="mb-3">
+        <label class="form-label">Category Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Expense Group</label>
+        <select name="group_id" class="form-select" required>
+          <option value="">Select group</option>
+          {% for group in groups %}
+          <option value="{{ group.id }}">{{ group.name }}</option>
+          {% endfor %}
+        </select>
+        {% if not groups %}
+        <div class="form-text"><a href="{{ url_for('masters.expense_groups') }}">Create expense groups</a> first.</div>
+        {% endif %}
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Category</button>
+    </form>
+
+    <form method="post" action="{{ url_for('masters.expense_categories_bulk_upload') }}" enctype="multipart/form-data" class="card card-body">
+      <h5 class="mb-3"><i class="bi bi-upload me-1"></i>Bulk Upload</h5>
+      <p class="small text-muted">Columns: Category Name, Expense Group</p>
+      <div class="mb-3">
+        <input type="file" name="upload_file" class="form-control" accept=".xlsx,.csv" required>
+      </div>
+      <button class="btn btn-success w-100"><i class="bi bi-file-earmark-arrow-up me-1"></i>Upload File</button>
+    </form>
+  </div>
+  <div class="col-lg-7">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Name</th><th>Expense Group</th><th></th></tr></thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr>
+            <td>{{ cat.name }}</td>
+            <td>{{ cat.group.name if cat.group else 'Ungrouped' }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('masters.delete_expense_category', cat_id=cat.id) }}" class="d-inline" onsubmit="return confirm('Delete this category?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted">No categories yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

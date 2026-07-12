@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SKSS-MIS{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero mb-4">
+  <div class="dashboard-hero-content">
+    <div>
+      <h2 class="mb-1"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+      <p class="text-muted mb-0">Welcome back — here's your business snapshot for {{ today.strftime('%d %B %Y') }}.</p>
+    </div>
+    <div class="dashboard-hero-badge">
+      <i class="bi bi-graph-up-arrow"></i>
+      <span>Live MIS Overview</span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card-v2 stat-danger">
+      <div class="stat-icon"><i class="bi bi-exclamation-circle"></i></div>
+      <div>
+        <div class="stat-label">Supplier Outstanding</div>
+        <div class="stat-value">₹ {{ "%.2f"|format(total_outstanding) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card-v2 stat-primary">
+      <div class="stat-icon"><i class="bi bi-cart-check"></i></div>
+      <div>
+        <div class="stat-label">Purchases This Month</div>
+        <div class="stat-value">₹ {{ "%.2f"|format(month_purchases) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card-v2 stat-warning">
+      <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+      <div>
+        <div class="stat-label">Expenses This Month</div>
+        <div class="stat-value">₹ {{ "%.2f"|format(month_expenses) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card-v2 stat-success">
+      <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-label">Receipts This Month</div>
+        <div class="stat-value">₹ {{ "%.2f"|format(month_receipts) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card dashboard-panel mb-4">
+  <div class="card-header dashboard-panel-header">
+    <h5 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+    <span class="text-muted small">Jump to your daily tasks</span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% set has_actions = user_can('purchase_order') or user_can('supplier_purchase') or user_can('purchase_return') or user_can('supplier_payment') or user_can('expense_payment') or user_can('receipt_mis') or user_can('supplier_mis_report') or user_can('cash_report') or user_can('expenses_mis_report') or current_user.is_admin %}
+      {% if not has_actions %}
+      <div class="col-12 text-muted text-center py-3">No quick actions available. Contact admin for module permissions.</div>
+      {% endif %}
+      {% if user_can('purchase_order') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.purchase_orders') }}" class="quick-action action-indigo">
+          <span class="quick-action-icon"><i class="bi bi-cart-check"></i></span>
+          <span class="quick-action-label">Purchase Order</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('supplier_purchase') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.supplier_bills') }}" class="quick-action action-blue">
+          <span class="quick-action-icon"><i class="bi bi-receipt"></i></span>
+          <span class="quick-action-label">Supplier Purchase</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('purchase_return') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.purchase_returns') }}" class="quick-action action-orange">
+          <span class="quick-action-icon"><i class="bi bi-arrow-return-left"></i></span>
+          <span class="quick-action-label">Purchase Return</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('supplier_payment') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.supplier_payments') }}" class="quick-action action-teal">
+          <span class="quick-action-icon"><i class="bi bi-cash-coin"></i></span>
+          <span class="quick-action-label">Supplier Payment</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('expense_payment') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.expense_payments') }}" class="quick-action action-pink">
+          <span class="quick-action-icon"><i class="bi bi-credit-card"></i></span>
+          <span class="quick-action-label">Expense Payment</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('receipt_mis') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('entries.inflows') }}" class="quick-action action-green">
+          <span class="quick-action-icon"><i class="bi bi-cash-stack"></i></span>
+          <span class="quick-action-label">Receipt MIS</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('supplier_mis_report') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('reports.supplier_mis') }}" class="quick-action action-purple">
+          <span class="quick-action-icon"><i class="bi bi-truck"></i></span>
+          <span class="quick-action-label">Supplier Report</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('cash_report') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('reports.cash_report') }}" class="quick-action action-cyan">
+          <span class="quick-action-icon"><i class="bi bi-bank"></i></span>
+          <span class="quick-action-label">Cash Report</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if user_can('expenses_mis_report') %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('reports.expenses_mis') }}" class="quick-action action-amber">
+          <span class="quick-action-icon"><i class="bi bi-pie-chart"></i></span>
+          <span class="quick-action-label">Expense Report</span>
+        </a>
+      </div>
+      {% endif %}
+      {% if current_user.is_admin %}
+      <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('masters.index') }}" class="quick-action action-slate">
+          <span class="quick-action-icon"><i class="bi bi-gear"></i></span>
+          <span class="quick-action-label">Settings</span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card dashboard-panel h-100">
+      <div class="card-header dashboard-panel-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Monthly Cash Flow</h5>
+        <span class="text-muted small">Last 6 months</span>
+      </div>
+      <div class="card-body">
+        <canvas id="monthlyFlowChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card dashboard-panel h-100">
+      <div class="card-header dashboard-panel-header">
+        <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Expenses by Group</h5>
+        <span class="text-muted small">This month</span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="expenseGroupChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card dashboard-panel h-100">
+      <div class="card-header dashboard-panel-header">
+        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Top Supplier Outstanding</h5>
+        <span class="text-muted small">Highest balances</span>
+      </div>
+      <div class="card-body">
+        <canvas id="supplierOutstandingChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card dashboard-panel h-100">
+      <div class="card-header dashboard-panel-header">
+        <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Month Summary</h5>
+        <span class="text-muted small">In vs out</span>
+      </div>
+      <div class="card-body">
+        <canvas id="monthSummaryChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card dashboard-panel">
+  <div class="card-header dashboard-panel-header">
+    <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Supplier Outstanding Balances</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 dashboard-table">
+      <thead>
+        <tr>
+          <th>Supplier</th>
+          <th>Category</th>
+          <th class="text-end">Purchases</th>
+          <th class="text-end">Paid</th>
+          <th class="text-end">Outstanding</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr>
+          <td class="fw-medium">{{ row.supplier.name }}</td>
+          <td><span class="badge bg-light text-dark border">{{ row.supplier.category.name if row.supplier.category else '-' }}</span></td>
+          <td class="text-end">₹ {{ "%.2f"|format(row.purchases) }}</td>
+          <td class="text-end">₹ {{ "%.2f"|format(row.paid) }}</td>
+          <td class="text-end fw-bold {% if row.outstanding > 0 %}text-danger{% endif %}">₹ {{ "%.2f"|format(row.outstanding) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No supplier data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const chartFont = { family: "'Segoe UI', system-ui, sans-serif", size: 12 };
+  const gridColor = "rgba(148, 163, 184, 0.2)";
+  const monthly = {{ monthly_chart|tojson }};
+  const expenseGroups = {{ expense_group_chart|tojson }};
+  const suppliers = {{ supplier_chart|tojson }};
+  const monthSummary = {
+    labels: ["Purchases", "Expenses", "Supplier Payments", "Receipts"],
+    values: [
+      {{ month_purchases }},
+      {{ month_expenses }},
+      {{ month_supplier_payments }},
+      {{ month_receipts }}
+    ]
+  };
+
+  const palette = ["#6366f1", "#3b82f6", "#14b8a6", "#f59e0b", "#ec4899", "#8b5cf6", "#10b981", "#ef4444"];
+
+  new Chart(document.getElementById("monthlyFlowChart"), {
+    type: "line",
+    data: {
+      labels: monthly.labels,
+      datasets: [
+        { label: "Purchases", data: monthly.purchases, borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.1)", tension: 0.35, fill: true },
+        { label: "Expenses", data: monthly.expenses, borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.08)", tension: 0.35, fill: true },
+        { label: "Supplier Payments", data: monthly.payments, borderColor: "#14b8a6", backgroundColor: "rgba(20,184,166,0.08)", tension: 0.35, fill: true },
+        { label: "Receipts", data: monthly.receipts, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.08)", tension: 0.35, fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { font: chartFont } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { font: chartFont } },
+        y: { grid: { color: gridColor }, ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("expenseGroupChart"), {
+    type: "doughnut",
+    data: {
+      labels: expenseGroups.labels,
+      datasets: [{
+        data: expenseGroups.values,
+        backgroundColor: palette,
+        borderWidth: 2,
+        borderColor: "#fff"
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom", labels: { font: chartFont, padding: 14 } } }
+    }
+  });
+
+  new Chart(document.getElementById("supplierOutstandingChart"), {
+    type: "bar",
+    data: {
+      labels: suppliers.labels,
+      datasets: [{
+        label: "Outstanding",
+        data: suppliers.values,
+        backgroundColor: "rgba(239, 68, 68, 0.75)",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { font: chartFont } },
+        y: { grid: { display: false }, ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("monthSummaryChart"), {
+    type: "bar",
+    data: {
+      labels: monthSummary.labels,
+      datasets: [{
+        data: monthSummary.values,
+        backgroundColor: ["#6366f1", "#f59e0b", "#14b8a6", "#10b981"],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: chartFont } },
+        y: { grid: { color: gridColor }, ticks: { font: chartFont } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}
