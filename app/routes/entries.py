@@ -6,16 +6,22 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.models import (
     BankAccount,
+    Branch,
     Brand,
+    BudgetExpenseLine,
+    BudgetPurchaseLine,
+    BudgetReceiptLine,
     CashBankInflow,
     Company,
     ExpenseCategory,
     ExpenseGroup,
     ExpensePayment,
+    MonthlyBudget,
     PurchaseOrder,
     PurchaseReturn,
     Supplier,
     SupplierBill,
+    SupplierCategory,
     SupplierPayment,
 )
 from app.utils import (
@@ -437,24 +443,29 @@ def delete_expense_payment(payment_id):
 @module_access("receipt_mis")
 def inflows():
     accounts = _accounts()
+    branches = Branch.query.filter_by(is_active=True).order_by(Branch.name).all()
     if request.method == "POST":
         inflow_date = parse_date(request.form.get("inflow_date"))
         receipt_type = request.form.get("receipt_type", "sales_collection")
         amount = float(request.form.get("amount") or 0)
         note = request.form.get("note", "").strip()
+        branch_id = request.form.get("branch_id", type=int)
         account_id = parse_account_id(request.form.get("account_id", ""))
         if account_id:
-            from app.models import BankAccount
-
             account = db.session.get(BankAccount, account_id)
             payment_mode = account.account_type if account else "bank"
         else:
             payment_mode = None
 
+        branch = db.session.get(Branch, branch_id) if branch_id else None
+        if branch and not branch.is_active:
+            branch = None
+
         if (
             inflow_date
             and amount > 0
             and account_id
+            and branch
             and receipt_type in ("sales_collection", "cash")
         ):
             db.session.add(
@@ -464,6 +475,7 @@ def inflows():
                     description=receipt_type_label(receipt_type),
                     amount=amount,
                     payment_mode=payment_mode or "bank",
+                    branch_id=branch.id,
                     bank_account_id=account_id,
                     note=note or None,
                 )
@@ -472,11 +484,11 @@ def inflows():
             log_activity(
                 "create",
                 "receipt_mis",
-                f"Recorded receipt of ₹{amount:.2f} ({receipt_type_label(receipt_type)})",
+                f"Recorded receipt of ₹{amount:.2f} ({receipt_type_label(receipt_type)}) — {branch.name}",
             )
             flash("Receipt recorded.", "success")
         else:
-            flash("Please fill all required fields.", "danger")
+            flash("Please fill all required fields, including Branch.", "danger")
         return redirect(url_for("entries.inflows"))
 
     inflow_list = (
@@ -486,7 +498,12 @@ def inflows():
         .limit(100)
         .all()
     )
-    return render_template("entries/inflows.html", accounts=accounts, inflows=inflow_list)
+    return render_template(
+        "entries/inflows.html",
+        accounts=accounts,
+        branches=branches,
+        inflows=inflow_list,
+    )
 
 
 @entries_bp.route("/inflows/<int:inflow_id>/delete", methods=["POST"])
@@ -499,3 +516,172 @@ def delete_inflow(inflow_id):
     log_activity("delete", "receipt_mis", f"Deleted receipt dated {inflow.inflow_date}", str(inflow_id))
     flash("Inflow deleted.", "success")
     return redirect(url_for("entries.inflows"))
+
+
+# --- Monthly Budget ---
+
+MONTH_NAMES = [
+    (1, "January"),
+    (2, "February"),
+    (3, "March"),
+    (4, "April"),
+    (5, "May"),
+    (6, "June"),
+    (7, "July"),
+    (8, "August"),
+    (9, "September"),
+    (10, "October"),
+    (11, "November"),
+    (12, "December"),
+]
+
+
+@entries_bp.route("/monthly-budget", methods=["GET", "POST"])
+@login_required
+@module_access("monthly_budget")
+def monthly_budget():
+    today = date.today()
+    year = request.values.get("year", type=int) or today.year
+    month = request.values.get("month", type=int) or today.month
+    if month < 1 or month > 12:
+        month = today.month
+
+    branches = Branch.query.filter_by(is_active=True).order_by(Branch.name).all()
+    supplier_categories = SupplierCategory.query.order_by(SupplierCategory.name).all()
+    expense_groups = ExpenseGroup.query.order_by(ExpenseGroup.name).all()
+    budget = MonthlyBudget.query.filter_by(year=year, month=month).first()
+
+    if request.method == "POST":
+        if not branches:
+            flash("Add branches under Settings → Branch Master before saving a budget.", "danger")
+            return redirect(url_for("entries.monthly_budget", year=year, month=month))
+
+        note = request.form.get("note", "").strip() or None
+        purchase_category_ids = request.form.getlist("purchase_category_id")
+        purchase_amounts = request.form.getlist("purchase_amount")
+        expense_group_ids = request.form.getlist("expense_group_id")
+        expense_amounts = request.form.getlist("expense_amount")
+
+        purchase_lines = []
+        seen_categories = set()
+        for cat_id_raw, amount_raw in zip(purchase_category_ids, purchase_amounts):
+            try:
+                cat_id = int(cat_id_raw)
+                amount = float(amount_raw or 0)
+            except (TypeError, ValueError):
+                continue
+            if not cat_id or amount == 0:
+                continue
+            if cat_id in seen_categories:
+                flash("Duplicate supplier category in Purchases is not allowed.", "danger")
+                return redirect(url_for("entries.monthly_budget", year=year, month=month))
+            seen_categories.add(cat_id)
+            purchase_lines.append((cat_id, amount))
+
+        expense_lines = []
+        seen_groups = set()
+        for group_id_raw, amount_raw in zip(expense_group_ids, expense_amounts):
+            try:
+                group_id = int(group_id_raw)
+                amount = float(amount_raw or 0)
+            except (TypeError, ValueError):
+                continue
+            if not group_id or amount == 0:
+                continue
+            if group_id in seen_groups:
+                flash("Duplicate expense group in Expenses is not allowed.", "danger")
+                return redirect(url_for("entries.monthly_budget", year=year, month=month))
+            seen_groups.add(group_id)
+            expense_lines.append((group_id, amount))
+
+        if budget is None:
+            budget = MonthlyBudget(year=year, month=month)
+            db.session.add(budget)
+            db.session.flush()
+            action = "create"
+        else:
+            BudgetReceiptLine.query.filter_by(budget_id=budget.id).delete()
+            BudgetPurchaseLine.query.filter_by(budget_id=budget.id).delete()
+            BudgetExpenseLine.query.filter_by(budget_id=budget.id).delete()
+            action = "update"
+
+        budget.purchase_amount = 0
+        budget.note = note
+
+        for branch in branches:
+            amount = float(request.form.get(f"receipt_branch_{branch.id}") or 0)
+            if amount != 0:
+                db.session.add(
+                    BudgetReceiptLine(budget_id=budget.id, branch_id=branch.id, amount=amount)
+                )
+
+        for cat_id, amount in purchase_lines:
+            db.session.add(
+                BudgetPurchaseLine(
+                    budget_id=budget.id, supplier_category_id=cat_id, amount=amount
+                )
+            )
+
+        for group_id, amount in expense_lines:
+            db.session.add(
+                BudgetExpenseLine(
+                    budget_id=budget.id, expense_group_id=group_id, amount=amount
+                )
+            )
+
+        db.session.commit()
+        label = date(year, month, 1).strftime("%b %Y")
+        log_activity(action, "monthly_budget", f"Saved monthly budget for {label}", label)
+        flash(f"Budget saved for {label}.", "success")
+        return redirect(url_for("entries.monthly_budget", year=year, month=month))
+
+    receipt_amounts = {line.branch_id: line.amount for line in (budget.receipt_lines if budget else [])}
+    purchase_rows = [
+        {"category_id": line.supplier_category_id, "amount": line.amount}
+        for line in (budget.purchase_lines if budget else [])
+    ]
+    expense_rows = [
+        {"group_id": line.expense_group_id, "amount": line.amount}
+        for line in (budget.expense_lines if budget else [])
+    ]
+    if not purchase_rows:
+        purchase_rows = [{"category_id": "", "amount": ""}]
+    if not expense_rows:
+        expense_rows = [{"group_id": "", "amount": ""}]
+
+    saved_budgets = (
+        MonthlyBudget.query.order_by(MonthlyBudget.year.desc(), MonthlyBudget.month.desc())
+        .limit(24)
+        .all()
+    )
+
+    return render_template(
+        "entries/monthly_budget.html",
+        year=year,
+        month=month,
+        months=MONTH_NAMES,
+        years=list(range(today.year - 2, today.year + 3)),
+        branches=branches,
+        supplier_categories=supplier_categories,
+        expense_groups=expense_groups,
+        budget=budget,
+        receipt_amounts=receipt_amounts,
+        purchase_rows=purchase_rows,
+        expense_rows=expense_rows,
+        note=budget.note if budget else "",
+        saved_budgets=saved_budgets,
+    )
+
+
+@entries_bp.route("/monthly-budget/<int:budget_id>/delete", methods=["POST"])
+@login_required
+@permission_required("monthly_budget", "delete")
+def delete_monthly_budget(budget_id):
+    budget = db.get_or_404(MonthlyBudget, budget_id)
+    label = date(budget.year, budget.month, 1).strftime("%b %Y")
+    year, month = budget.year, budget.month
+    db.session.delete(budget)
+    db.session.commit()
+    log_activity("delete", "monthly_budget", f"Deleted monthly budget for {label}", label)
+    flash(f"Budget for {label} deleted.", "success")
+    return redirect(url_for("entries.monthly_budget", year=year, month=month))

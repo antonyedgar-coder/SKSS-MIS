@@ -23,6 +23,7 @@ from app.models import (
 )
 from app.utils import (
     approver_required,
+    build_budget_vs_actual,
     build_cash_report_matrix,
     build_supplier_ledger,
     expense_payment_particulars,
@@ -820,6 +821,133 @@ def po_variation_excel():
     buffer.seek(0)
     filename = f"PO_Variation_{from_date}_{to_date}.xlsx"
     log_activity("export", "po_variation_report", f"Exported PO Variation report ({from_date} to {to_date})", filename)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@reports_bp.route("/budget-vs-actual", methods=["GET", "POST"])
+@login_required
+@permission_required("budget_vs_actual_report", "view")
+def budget_vs_actual():
+    today = date.today()
+    period_type = "month"
+    year = today.year
+    month = today.month
+    show_report = False
+    report_data = None
+    months = [
+        (1, "January"),
+        (2, "February"),
+        (3, "March"),
+        (4, "April"),
+        (5, "May"),
+        (6, "June"),
+        (7, "July"),
+        (8, "August"),
+        (9, "September"),
+        (10, "October"),
+        (11, "November"),
+        (12, "December"),
+    ]
+
+    if request.method == "POST":
+        show_report = True
+        period_type = request.form.get("period_type", "month")
+        year = request.form.get("year", type=int) or today.year
+        month = request.form.get("month", type=int) or today.month
+        try:
+            report_data = build_budget_vs_actual(
+                period_type, year, month if period_type == "month" else None
+            )
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            show_report = False
+
+    return render_template(
+        "reports/budget_vs_actual.html",
+        period_type=period_type,
+        year=year,
+        month=month,
+        months=months,
+        years=list(range(today.year - 2, today.year + 3)),
+        show_report=show_report,
+        report_data=report_data,
+    )
+
+
+@reports_bp.route("/budget-vs-actual/excel")
+@login_required
+@permission_required("budget_vs_actual_report", "view")
+def budget_vs_actual_excel():
+    today = date.today()
+    period_type = request.args.get("period_type", "month")
+    year = request.args.get("year", type=int) or today.year
+    month = request.args.get("month", type=int) or today.month
+
+    try:
+        report_data = build_budget_vs_actual(
+            period_type, year, month if period_type == "month" else None
+        )
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("reports.budget_vs_actual"))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Budget vs Actual"
+    ws.append([f"Budget vs Actual — {report_data['period_label']}"])
+    ws.append(
+        [
+            f"Period: {report_data['from_date'].strftime('%d-%b-%Y')} to "
+            f"{report_data['to_date'].strftime('%d-%b-%Y')}"
+        ]
+    )
+    ws.append([])
+    ws.append(["Particulars", "Budget", "Actual", "Variation", "% Variation"])
+    _style_header(ws, 4)
+
+    for section in report_data["sections"]:
+        ws.append([section["title"]])
+        for row in section["rows"]:
+            pct = f"{row['pct']:.2f}%" if row["pct"] is not None else "—"
+            prefix = "  " if row.get("indent") else ""
+            ws.append(
+                [
+                    f"{prefix}{row['label']}",
+                    row["budget"],
+                    row["actual"],
+                    row["variation"],
+                    pct,
+                ]
+            )
+        if section.get("total"):
+            total = section["total"]
+            pct = f"{total['pct']:.2f}%" if total["pct"] is not None else "—"
+            ws.append(
+                [
+                    total["label"],
+                    total["budget"],
+                    total["actual"],
+                    total["variation"],
+                    pct,
+                ]
+            )
+        ws.append([])
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    filename = f"Budget_vs_Actual_{report_data['period_label'].replace(' ', '_')}.xlsx"
+    log_activity(
+        "export",
+        "budget_vs_actual_report",
+        f"Exported Budget vs Actual ({report_data['period_label']})",
+        filename,
+    )
     return send_file(
         buffer,
         as_attachment=True,

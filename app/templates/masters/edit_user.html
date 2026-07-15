@@ -1,40 +1,80 @@
-{% extends "base.html" %}
-{% block title %}Edit User - SKSS-MIS{% endblock %}
-{% block content %}
-<div class="page-header">
-  <h2><i class="bi bi-person-gear me-2"></i>Edit User</h2>
-</div>
-<form method="post">
-  <div class="row">
-    <div class="col-lg-4">
-      <div class="card card-body mb-4">
-        <div class="mb-3">
-          <label class="form-label">Username</label>
-          <input type="text" class="form-control" value="{{ user.username }}" disabled>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">New Password</label>
-          <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Role</label>
-          <select name="role" class="form-select" id="userRole">
-            <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>Staff</option>
-            <option value="approver" {% if user.role == 'approver' %}selected{% endif %}>Approver</option>
-            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
-          </select>
-        </div>
-        <div class="mb-3 form-check">
-          <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if user.is_active %}checked{% endif %}>
-          <label class="form-check-label" for="is_active">Active</label>
-        </div>
-        <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
-        <a href="{{ url_for('masters.users') }}" class="btn btn-secondary">Cancel</a>
-      </div>
-    </div>
-    <div class="col-lg-8">
-      {% include "masters/_permission_matrix.html" %}
-    </div>
-  </div>
-</form>
-{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Edit User - SKSS-MIS{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+  <h2><i class="bi bi-person-gear me-2"></i>Edit User</h2>
+
+</div>
+
+<form method="post">
+
+  <div class="row">
+
+    <div class="col-lg-4">
+
+      <div class="card card-body mb-4">
+
+        <div class="mb-3">
+
+          <label class="form-label">Username</label>
+
+          <input type="text" class="form-control" value="{{ user.username }}" disabled>
+
+        </div>
+
+        <div class="mb-3">
+
+          <label class="form-label">New Password</label>
+
+          <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
+
+        </div>
+
+        <div class="mb-3">
+
+          <label class="form-label">Role</label>
+
+          <select name="role" class="form-select" id="userRole">
+
+            <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>Staff</option>
+
+            <option value="approver" {% if user.role == 'approver' %}selected{% endif %}>Approver</option>
+
+            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+
+          </select>
+
+        </div>
+
+        <div class="mb-3 form-check">
+
+          <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if user.is_active %}checked{% endif %}>
+
+          <label class="form-check-label" for="is_active">Active</label>
+
+        </div>
+
+        <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
+
+        <a href="{{ url_for('masters.users') }}" class="btn btn-secondary">Cancel</a>
+
+      </div>
+
+    </div>
+
+    <div class="col-lg-8">
+
+      {% include "masters/_permission_matrix.html" %}
+
+    </div>
+
+  </div>
+
+</form>
+
+{% endblock %}
+

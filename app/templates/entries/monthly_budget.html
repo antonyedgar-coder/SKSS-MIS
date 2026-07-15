@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Monthly Budget - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-calendar2-check me-2"></i>Monthly Budget</h2>
+    <p class="text-muted mb-0">Cash-flow style budget — branch receipts, category purchases, and expense groups.</p>
+  </div>
+</div>
+
+<form method="get" class="card card-body mb-3">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Month</label>
+      <select name="month" class="form-select" onchange="this.form.submit()">
+        {% for mnum, mname in months %}
+        <option value="{{ mnum }}" {% if mnum == month %}selected{% endif %}>{{ mname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Year</label>
+      <select name="year" class="form-select" onchange="this.form.submit()">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-6">
+      {% if budget %}
+      <span class="badge text-bg-success">Budget saved for this month</span>
+      {% else %}
+      <span class="badge text-bg-secondary">No budget saved yet for this month</span>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<div class="row">
+  <div class="col-lg-8">
+    {% if user_can('monthly_budget', 'create') or user_can('monthly_budget', 'edit') %}
+    <form method="post" class="card card-body mb-3" id="budgetForm">
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="month" value="{{ month }}">
+
+      <h5 class="mb-3">Proposed Receipts (Branch-wise)</h5>
+      {% if branches %}
+      {% for b in branches %}
+      <div class="row g-2 align-items-center mb-2">
+        <div class="col-md-5"><label class="form-label mb-0">{{ b.name }}</label></div>
+        <div class="col-md-4">
+          <input type="number" step="0.01" min="0" name="receipt_branch_{{ b.id }}" class="form-control"
+                 value="{{ "%.2f"|format(receipt_amounts.get(b.id, 0)) }}">
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-muted">No active branches. Add them under Settings → Branch Master.</p>
+      {% endif %}
+
+      <hr>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Purchases (Supplier Category)</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="addPurchaseRow">
+          <i class="bi bi-plus-lg"></i> Add Row
+        </button>
+      </div>
+      {% if supplier_categories %}
+      <div id="purchaseRows">
+        {% for row in purchase_rows %}
+        <div class="row g-2 align-items-end mb-2 budget-dynamic-row" data-section="purchase">
+          <div class="col-md-5">
+            <label class="form-label">Supplier Category</label>
+            <select name="purchase_category_id" class="form-select budget-key-select">
+              <option value="">Select category</option>
+              {% for c in supplier_categories %}
+              <option value="{{ c.id }}" {% if row.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Amount</label>
+            <input type="number" step="0.01" min="0" name="purchase_amount" class="form-control"
+                   value="{% if row.amount != '' %}{{ '%.2f'|format(row.amount|float) }}{% endif %}">
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-outline-danger w-100 remove-row-btn" {% if loop.first and purchase_rows|length == 1 %}disabled{% endif %}>
+              Remove
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted">No supplier categories. Add them under Settings → Supplier Categories.</p>
+      {% endif %}
+
+      <hr>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Expenses (Expense Group)</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="addExpenseRow">
+          <i class="bi bi-plus-lg"></i> Add Row
+        </button>
+      </div>
+      {% if expense_groups %}
+      <div id="expenseRows">
+        {% for row in expense_rows %}
+        <div class="row g-2 align-items-end mb-2 budget-dynamic-row" data-section="expense">
+          <div class="col-md-5">
+            <label class="form-label">Expense Group</label>
+            <select name="expense_group_id" class="form-select budget-key-select">
+              <option value="">Select expense group</option>
+              {% for g in expense_groups %}
+              <option value="{{ g.id }}" {% if row.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Amount</label>
+            <input type="number" step="0.01" min="0" name="expense_amount" class="form-control"
+                   value="{% if row.amount != '' %}{{ '%.2f'|format(row.amount|float) }}{% endif %}">
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-outline-danger w-100 remove-row-btn" {% if loop.first and expense_rows|length == 1 %}disabled{% endif %}>
+              Remove
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted">No expense groups. Add them under Settings → Expense Groups.</p>
+      {% endif %}
+
+      <hr>
+      <div class="mb-3">
+        <label class="form-label">Note</label>
+        <input type="text" name="note" class="form-control" value="{{ note or '' }}">
+      </div>
+      <button class="btn btn-primary">Save Budget</button>
+    </form>
+    {% else %}
+    <div class="alert alert-warning">You do not have permission to edit budgets.</div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Saved Budgets</div>
+      <div class="list-group list-group-flush">
+        {% for b in saved_budgets %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('entries.monthly_budget', year=b.year, month=b.month) }}">
+            {{ ["", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][b.month] }} {{ b.year }}
+          </a>
+          {% if user_can('monthly_budget', 'delete') %}
+          <form method="post" action="{{ url_for('entries.delete_monthly_budget', budget_id=b.id) }}" class="d-inline"
+                onsubmit="return confirm('Delete budget for {{ b.month }}/{{ b.year }}?')">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="list-group-item text-muted">No budgets saved yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="purchaseRowTemplate">
+  <div class="row g-2 align-items-end mb-2 budget-dynamic-row" data-section="purchase">
+    <div class="col-md-5">
+      <label class="form-label">Supplier Category</label>
+      <select name="purchase_category_id" class="form-select budget-key-select">
+        <option value="">Select category</option>
+        {% for c in supplier_categories %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Amount</label>
+      <input type="number" step="0.01" min="0" name="purchase_amount" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <button type="button" class="btn btn-outline-danger w-100 remove-row-btn">Remove</button>
+    </div>
+  </div>
+</template>
+
+<template id="expenseRowTemplate">
+  <div class="row g-2 align-items-end mb-2 budget-dynamic-row" data-section="expense">
+    <div class="col-md-5">
+      <label class="form-label">Expense Group</label>
+      <select name="expense_group_id" class="form-select budget-key-select">
+        <option value="">Select expense group</option>
+        {% for g in expense_groups %}
+        <option value="{{ g.id }}">{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Amount</label>
+      <input type="number" step="0.01" min="0" name="expense_amount" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <button type="button" class="btn btn-outline-danger w-100 remove-row-btn">Remove</button>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  function refreshDuplicateOptions(container) {
+    if (!container) return;
+    var selects = Array.prototype.slice.call(container.querySelectorAll(".budget-key-select"));
+    var selected = selects
+      .map(function (s) { return s.value; })
+      .filter(function (v) { return v; });
+
+    selects.forEach(function (select) {
+      var current = select.value;
+      Array.prototype.forEach.call(select.options, function (opt) {
+        if (!opt.value) {
+          opt.disabled = false;
+          return;
+        }
+        opt.disabled = selected.indexOf(opt.value) !== -1 && opt.value !== current;
+      });
+    });
+
+    var rows = container.querySelectorAll(".budget-dynamic-row");
+    rows.forEach(function (row) {
+      var btn = row.querySelector(".remove-row-btn");
+      if (btn) btn.disabled = rows.length <= 1;
+    });
+
+    var addBtn = container.id === "purchaseRows"
+      ? document.getElementById("addPurchaseRow")
+      : document.getElementById("addExpenseRow");
+    if (addBtn) {
+      var totalOptions = selects[0] ? selects[0].options.length - 1 : 0;
+      addBtn.disabled = rows.length >= totalOptions && totalOptions > 0;
+    }
+  }
+
+  function wireContainer(containerId, templateId, addBtnId) {
+    var container = document.getElementById(containerId);
+    var template = document.getElementById(templateId);
+    var addBtn = document.getElementById(addBtnId);
+    if (!container || !template || !addBtn) return;
+
+    addBtn.addEventListener("click", function () {
+      var node = template.content.cloneNode(true);
+      container.appendChild(node);
+      refreshDuplicateOptions(container);
+    });
+
+    container.addEventListener("click", function (e) {
+      var btn = e.target.closest(".remove-row-btn");
+      if (!btn || btn.disabled) return;
+      var row = btn.closest(".budget-dynamic-row");
+      if (row && container.querySelectorAll(".budget-dynamic-row").length > 1) {
+        row.remove();
+        refreshDuplicateOptions(container);
+      }
+    });
+
+    container.addEventListener("change", function (e) {
+      if (e.target.classList.contains("budget-key-select")) {
+        refreshDuplicateOptions(container);
+      }
+    });
+
+    refreshDuplicateOptions(container);
+  }
+
+  wireContainer("purchaseRows", "purchaseRowTemplate", "addPurchaseRow");
+  wireContainer("expenseRows", "expenseRowTemplate", "addExpenseRow");
+
+  var form = document.getElementById("budgetForm");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      function hasDuplicates(selectName) {
+        var values = Array.prototype.slice
+          .call(form.querySelectorAll('select[name="' + selectName + '"]'))
+          .map(function (s) { return s.value; })
+          .filter(function (v) { return v; });
+        return new Set(values).size !== values.length;
+      }
+      if (hasDuplicates("purchase_category_id")) {
+        e.preventDefault();
+        alert("Each supplier category can be used only once in Purchases.");
+        return;
+      }
+      if (hasDuplicates("expense_group_id")) {
+        e.preventDefault();
+        alert("Each expense group can be used only once in Expenses.");
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

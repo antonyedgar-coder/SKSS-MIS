@@ -8,6 +8,7 @@ from flask_login import current_user
 from app.extensions import db
 
 PERMISSION_MODULES = [
+    ("monthly_budget", "Monthly Budget"),
     ("purchase_order", "Purchase Order"),
     ("supplier_purchase", "Supplier Purchase"),
     ("purchase_return", "Purchase Return"),
@@ -18,6 +19,7 @@ PERMISSION_MODULES = [
     ("po_variation_report", "PO Variation Report"),
     ("expenses_mis_report", "Expenses MIS Report"),
     ("cash_report", "Cash Report"),
+    ("budget_vs_actual_report", "Budget vs Actual Report"),
 ]
 
 PERMISSION_ACTIONS = [

@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models import (
     ActivityLog,
     BankAccount,
+    Branch,
     Brand,
     Company,
     ExpenseCategory,
@@ -519,6 +520,57 @@ def _get_or_create_expense_group(name: str) -> ExpenseGroup:
         db.session.add(group)
         db.session.flush()
     return group
+
+
+# --- Branches ---
+
+
+@masters_bp.route("/branches", methods=["GET", "POST"])
+@login_required
+@admin_required
+def branches():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if name:
+            if Branch.query.filter_by(name=name).first():
+                flash("Branch already exists.", "warning")
+            else:
+                db.session.add(Branch(name=name, is_active=True))
+                db.session.commit()
+                log_activity("create", "branches", f"Added branch {name}", name)
+                flash("Branch added.", "success")
+        return redirect(url_for("masters.branches"))
+
+    branch_list = Branch.query.order_by(Branch.name).all()
+    return render_template("masters/branches.html", branches=branch_list)
+
+
+@masters_bp.route("/branches/<int:branch_id>/toggle", methods=["POST"])
+@login_required
+@admin_required
+def toggle_branch(branch_id):
+    branch = db.get_or_404(Branch, branch_id)
+    branch.is_active = not branch.is_active
+    db.session.commit()
+    status = "activated" if branch.is_active else "deactivated"
+    log_activity("update", "branches", f"Branch {branch.name} {status}", branch.name)
+    flash(f"Branch {status}.", "success")
+    return redirect(url_for("masters.branches"))
+
+
+@masters_bp.route("/branches/<int:branch_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def delete_branch(branch_id):
+    branch = db.get_or_404(Branch, branch_id)
+    if branch.receipts:
+        flash("Cannot delete branch with linked receipts. Deactivate it instead.", "danger")
+    else:
+        db.session.delete(branch)
+        db.session.commit()
+        log_activity("delete", "branches", f"Deleted branch {branch.name}", branch.name)
+        flash("Branch deleted.", "success")
+    return redirect(url_for("masters.branches"))
 
 
 # --- Expense Groups ---

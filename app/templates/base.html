@@ -56,6 +56,18 @@
 
 
 
+      {% if user_can('monthly_budget') %}
+
+      <a class="sidebar-group-toggle sidebar-main-tab" href="{{ url_for('entries.monthly_budget') }}" id="navMonthlyBudgetLink">
+
+        <i class="bi bi-calendar2-check"></i><span>Monthly Budget</span>
+
+      </a>
+
+      {% endif %}
+
+
+
       <div id="sidebarAccordion">
 
         {% if user_can('purchase_order') or user_can('supplier_purchase') or user_can('purchase_return') or user_can('supplier_payment') %}
@@ -170,7 +182,7 @@
 
 
 
-        {% if user_can('supplier_mis_report') or user_can('po_variation_report') or user_can('expenses_mis_report') or user_can('cash_report') %}
+        {% if user_can('supplier_mis_report') or user_can('po_variation_report') or user_can('expenses_mis_report') or user_can('cash_report') or user_can('budget_vs_actual_report') %}
 
         <div class="sidebar-section">
 
@@ -217,6 +229,16 @@
             <a class="sidebar-link" href="{{ url_for('reports.cash_report') }}">
 
               <i class="bi bi-bank"></i><span>Cash Report</span>
+
+            </a>
+
+            {% endif %}
+
+            {% if user_can('budget_vs_actual_report') %}
+
+            <a class="sidebar-link" href="{{ url_for('reports.budget_vs_actual') }}">
+
+              <i class="bi bi-bar-chart-steps"></i><span>Budget vs Actual</span>
 
             </a>
 

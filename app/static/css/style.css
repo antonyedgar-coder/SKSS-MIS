@@ -98,6 +98,17 @@ body.has-sidebar {
   font-weight: 500;
 }
 
+a.sidebar-group-toggle.sidebar-main-tab {
+  text-decoration: none;
+  margin-bottom: 0.25rem;
+  color: var(--sidebar-text);
+}
+
+a.sidebar-group-toggle.sidebar-main-tab.active {
+  background: var(--sidebar-hover);
+  color: #fff;
+}
+
 .sidebar-settings-link {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
@@ -536,3 +547,4 @@ body.has-sidebar .main-wrapper {
 .tile-amber { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
 .tile-red { background: linear-gradient(135deg, #f87171, #ef4444); }
 .tile-slate { background: linear-gradient(135deg, #64748b, #475569); }
+.tile-blue { background: linear-gradient(135deg, #60a5fa, #3b82f6); }

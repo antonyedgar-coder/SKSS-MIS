@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Branch Master - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-geo-alt me-2"></i>Branch Master</h2>
+  <p class="text-muted mb-0">Branches used for receipt entry and monthly receipt budgets.</p>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <form method="post" class="card card-body mb-3">
+      <div class="mb-3">
+        <label class="form-label">Branch Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <button class="btn btn-primary">Add Branch</button>
+    </form>
+  </div>
+  <div class="col-md-8">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Branch Name</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for branch in branches %}
+          <tr>
+            <td>{{ branch.name }}</td>
+            <td>
+              {% if branch.is_active %}
+              <span class="badge text-bg-success">Active</span>
+              {% else %}
+              <span class="badge text-bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('masters.toggle_branch', branch_id=branch.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-secondary">
+                  {% if branch.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('masters.delete_branch', branch_id=branch.id) }}" class="d-inline" onsubmit="return confirm('Delete this branch?')">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted">No branches yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

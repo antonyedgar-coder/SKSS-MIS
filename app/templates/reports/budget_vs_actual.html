@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Budget vs Actual - SKSS-MIS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 page-header flex-wrap gap-2">
+  <div>
+    <h2><i class="bi bi-bar-chart-steps me-2"></i>Budget vs Actual</h2>
+    <p class="text-muted mb-0 small">
+      Compare monthly / yearly budget with actual receipts, purchases, and expenses.
+    </p>
+  </div>
+  {% if show_report and report_data %}
+  <a href="{{ url_for('reports.budget_vs_actual_excel', period_type=period_type, year=year, month=month) }}" class="btn btn-success">
+    <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+  </a>
+  {% endif %}
+</div>
+
+<form method="post" class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Period Type</label>
+        <select name="period_type" id="period_type" class="form-select">
+          <option value="month" {% if period_type == 'month' %}selected{% endif %}>Month-wise</option>
+          <option value="year" {% if period_type == 'year' %}selected{% endif %}>Year-wise</option>
+        </select>
+      </div>
+      <div class="col-md-3" id="month_wrap">
+        <label class="form-label">Month</label>
+        <select name="month" class="form-select">
+          {% for mnum, mname in months %}
+          <option value="{{ mnum }}" {% if mnum == month %}selected{% endif %}>{{ mname }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Year</label>
+        <select name="year" class="form-select">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel me-1"></i>View Report
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if show_report and report_data %}
+{% if not report_data.has_budget %}
+<div class="alert alert-warning">
+  No budget saved for {{ report_data.period_label }}. Actuals are shown; budget columns will be zero until you enter a budget under Monthly Budget.
+</div>
+{% endif %}
+
+<p class="text-muted small mb-2">
+  Period: {{ report_data.from_date.strftime('%d-%b-%Y') }} to {{ report_data.to_date.strftime('%d-%b-%Y') }}
+  · Variation = Actual − Budget
+</p>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Particulars</th>
+        <th class="text-end">Budget</th>
+        <th class="text-end">Actual</th>
+        <th class="text-end">Variation</th>
+        <th class="text-end">% Variation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for section in report_data.sections %}
+      <tr class="table-secondary">
+        <th colspan="5">{{ section.title }}</th>
+      </tr>
+      {% for row in section.rows %}
+      <tr class="{% if row.is_total %}fw-semibold{% endif %}">
+        <td class="{% if row.indent %}ps-4{% endif %}">{{ row.label }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.budget) }}</td>
+        <td class="text-end">{{ "%.2f"|format(row.actual) }}</td>
+        <td class="text-end {% if row.variation > 0 %}text-success{% elif row.variation < 0 %}text-danger{% endif %}">
+          {{ "%.2f"|format(row.variation) }}
+        </td>
+        <td class="text-end">
+          {% if row.pct is not none %}{{ "%.2f"|format(row.pct) }}%{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if section.total %}
+      <tr class="table-light fw-semibold">
+        <td>{{ section.total.label }}</td>
+        <td class="text-end">{{ "%.2f"|format(section.total.budget) }}</td>
+        <td class="text-end">{{ "%.2f"|format(section.total.actual) }}</td>
+        <td class="text-end {% if section.total.variation > 0 %}text-success{% elif section.total.variation < 0 %}text-danger{% endif %}">
+          {{ "%.2f"|format(section.total.variation) }}
+        </td>
+        <td class="text-end">
+          {% if section.total.pct is not none %}{{ "%.2f"|format(section.total.pct) }}%{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var periodType = document.getElementById("period_type");
+  var monthWrap = document.getElementById("month_wrap");
+  function syncMonth() {
+    if (!periodType || !monthWrap) return;
+    monthWrap.style.display = periodType.value === "year" ? "none" : "";
+  }
+  if (periodType) {
+    periodType.addEventListener("change", syncMonth);
+    syncMonth();
+  }
+})();
+</script>
+{% endblock %}

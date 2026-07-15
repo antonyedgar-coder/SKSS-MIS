@@ -95,6 +95,11 @@ def _migrate_db():
                         "ALTER TABLE cash_bank_inflows ADD COLUMN receipt_type VARCHAR(20) NOT NULL DEFAULT 'sales_collection'"
                     )
                 )
+        if "branch_id" not in inflow_cols:
+            with db.engine.begin() as conn:
+                conn.execute(
+                    text("ALTER TABLE cash_bank_inflows ADD COLUMN branch_id INTEGER REFERENCES branches(id)")
+                )
         _backfill_inflow_accounts()
 
     _ensure_default_company_and_brand()

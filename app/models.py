@@ -131,6 +131,15 @@ class PurchaseOrder(db.Model):
     bill = db.relationship("SupplierBill", back_populates="purchase_order", uselist=False)
 
 
+class Branch(db.Model):
+    __tablename__ = "branches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    receipts = db.relationship("CashBankInflow", back_populates="branch", lazy=True)
+
+
 class ExpenseGroup(db.Model):
     __tablename__ = "expense_groups"
 
@@ -253,9 +262,11 @@ class CashBankInflow(db.Model):
     description = db.Column(db.String(300))
     amount = db.Column(db.Float, nullable=False)
     payment_mode = db.Column(db.String(10), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"))
     bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_accounts.id"), nullable=False)
     note = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    branch = db.relationship("Branch", back_populates="receipts")
     bank_account = db.relationship("BankAccount")
 
 
@@ -268,3 +279,69 @@ class OpeningBalance(db.Model):
     amount = db.Column(db.Float, nullable=False, default=0)
     as_on_date = db.Column(db.Date, nullable=False)
     bank_account = db.relationship("BankAccount")
+
+
+class MonthlyBudget(db.Model):
+    __tablename__ = "monthly_budgets"
+    __table_args__ = (db.UniqueConstraint("year", "month", name="uq_budget_year_month"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    purchase_amount = db.Column(db.Float, nullable=False, default=0)  # legacy; use purchase_lines
+    note = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    receipt_lines = db.relationship(
+        "BudgetReceiptLine", back_populates="budget", cascade="all, delete-orphan", lazy=True
+    )
+    purchase_lines = db.relationship(
+        "BudgetPurchaseLine", back_populates="budget", cascade="all, delete-orphan", lazy=True
+    )
+    expense_lines = db.relationship(
+        "BudgetExpenseLine", back_populates="budget", cascade="all, delete-orphan", lazy=True
+    )
+
+
+class BudgetReceiptLine(db.Model):
+    __tablename__ = "budget_receipt_lines"
+    __table_args__ = (db.UniqueConstraint("budget_id", "branch_id", name="uq_budget_branch"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    budget_id = db.Column(db.Integer, db.ForeignKey("monthly_budgets.id"), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
+    amount = db.Column(db.Float, nullable=False, default=0)
+
+    budget = db.relationship("MonthlyBudget", back_populates="receipt_lines")
+    branch = db.relationship("Branch")
+
+
+class BudgetPurchaseLine(db.Model):
+    __tablename__ = "budget_purchase_lines"
+    __table_args__ = (
+        db.UniqueConstraint("budget_id", "supplier_category_id", name="uq_budget_supplier_category"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    budget_id = db.Column(db.Integer, db.ForeignKey("monthly_budgets.id"), nullable=False)
+    supplier_category_id = db.Column(
+        db.Integer, db.ForeignKey("supplier_categories.id"), nullable=False
+    )
+    amount = db.Column(db.Float, nullable=False, default=0)
+
+    budget = db.relationship("MonthlyBudget", back_populates="purchase_lines")
+    supplier_category = db.relationship("SupplierCategory")
+
+
+class BudgetExpenseLine(db.Model):
+    __tablename__ = "budget_expense_lines"
+    __table_args__ = (db.UniqueConstraint("budget_id", "expense_group_id", name="uq_budget_expense_group"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    budget_id = db.Column(db.Integer, db.ForeignKey("monthly_budgets.id"), nullable=False)
+    expense_group_id = db.Column(db.Integer, db.ForeignKey("expense_groups.id"), nullable=False)
+    amount = db.Column(db.Float, nullable=False, default=0)
+
+    budget = db.relationship("MonthlyBudget", back_populates="expense_lines")
+    expense_group = db.relationship("ExpenseGroup")
